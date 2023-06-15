@@ -1,0 +1,12 @@
+import { Module } from "@app/module";
+import { {{pascalCase name}}Controller } from "./{{kebabCase name}}.controller";
+import { {{pascalCase name}}Service } from "./{{kebabCase name}}.service";
+
+export class {{pascalCase name}} extends Module{
+  config(){
+    return {
+      controllers: [{{pascalCase name}}Controller],
+      services: [{{pascalCase name}}Service]
+    }
+  }
+}

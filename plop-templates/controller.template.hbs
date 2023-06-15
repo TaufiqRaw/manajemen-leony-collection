@@ -1,0 +1,19 @@
+import 'reflect-metadata';
+import { Controller, Get } from "@app/decorators/controller.decorator";
+import { {{pascalCase name}}Service } from './{{kebabCase name}}.service';
+import { Request, Response } from "express";
+import { injectable } from 'inversify';
+
+@injectable()
+@Controller('{{kebabCase name}}')
+export class {{pascalCase name}}Controller {
+
+  constructor(
+    private readonly {{camelCase name}}Service: {{pascalCase name}}Service
+  ) {}
+  
+  @Get("hello")
+  async hello(req : Request, res: Response){
+    return this.{{camelCase name}}Service.getHello();
+  }
+}

@@ -1,0 +1,11 @@
+import "reflect-metadata";
+import { injectable } from "inversify";
+
+@injectable()
+export class {{pascalCase name}}Service {
+  constructor() {}
+
+  getHello() {
+    return "hello";
+  }
+}
