@@ -1,12 +1,20 @@
-import { RequestHandler } from "express";
+import { NextFunction, Request, RequestHandler, Response } from "express";
 import "reflect-metadata";
-import { devLog } from "../utils/helper";
+import { Middleware as MiddlewareType } from "../bases/middleware.base";
+import { devLog } from "../utils/development.util";
+import httpContext from "express-http-context"
+import { Container } from "inversify";
+import { Class, ClassOf } from "../types/class.type";
 
 const METHOD ={
   GET : "get",
   POST : "post",
   PUT : "put",
   DELETE : "delete"
+}
+export type MiddlewareObject = {
+  run : (...args : any[])=>(req:Request,res:Response,next:NextFunction)=> void | Promise<void>
+  dependencies : ClassOf<any>[]
 }
 
 export type ControllerDecoratorMetadata = {
@@ -20,7 +28,7 @@ export function Controller(path : string | undefined) {
   };
 }
 
-export function Middleware(middleware: RequestHandler[] | RequestHandler) {
+export function Middleware(...middleware: (RequestHandler | MiddlewareObject)[]) {
   const arrayMiddleware = Array.isArray(middleware) ? middleware : [middleware]
   return function (target: any, propertyKey?: string) {
     propertyKey ? 

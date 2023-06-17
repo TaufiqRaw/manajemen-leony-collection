@@ -6,7 +6,7 @@ Monolithic app that use Express, homebrew Nest-like framework, and Inversify to 
 ## Requirements
 
 - Node (^16.0.0)
-- sql database (preferably mySql)
+- sql database (preferably Postgresql)
 
 ## Installation
 

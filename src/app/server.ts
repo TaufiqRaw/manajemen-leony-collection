@@ -1,14 +1,15 @@
 import mikroOrmConfig from "@/database/mikro-orm.config"
 import { ReflectMetadataProvider } from "@mikro-orm/core"
 import { MikroORM, PostgreSqlDriver } from "@mikro-orm/postgresql"
-import Express,{ Application } from "express"
+import Express,{ Application, RequestHandler } from "express"
 import { Container } from "inversify"
 import process from "process"
 import { errorHandler } from "./error-handler"
 import { Module } from "./module"
 import { ClassOf } from "./types/class.type"
-import { devLog, isDevelopment } from "./utils/helper"
+import { devLog, isDevelopment, LOG_LEVEL, LOG_TYPE } from "./utils/development.util"
 import httpContext from "express-http-context"
+import minimist from "minimist"
 
 interface ServerConfig {
   port: number|string
@@ -34,22 +35,34 @@ export class Server {
 
   public onRequest(orm : MikroORM) {
     httpContext.set("container", new Container({defaultScope: "Request"}))
+    httpContext.set("routesHandler", new Map<string, RequestHandler[]>())
 
     //checking for memory leaks
-    devLog(process.memoryUsage())
-    devLog("Route Length =",this.application._router.stack.length)
+    devLog(LOG_LEVEL.DEBUG, LOG_TYPE.MEMORY,process.memoryUsage())
+    devLog(LOG_LEVEL.DEBUG, LOG_TYPE.SERVER ,"Route Length =",this.application._router.stack.length)
     
     //rebind modules
-    devLog("Rebinding Modules...")
+    devLog(LOG_LEVEL.INFO, LOG_TYPE.SERVER, "Rebinding Modules...")
     this.moduleInstances.forEach(module => {
       module.rebind(httpContext.get("container"), orm.em.fork())
     })
     
-    devLog("Done rebinding")
+    devLog(LOG_LEVEL.INFO, LOG_TYPE.SERVER,"Done rebinding")
   }
   
   public async run() {
     try {
+      //check if development flag is set
+      const logLevel = minimist(process.argv.slice(2)).level
+      const logType : string = minimist(process.argv.slice(2)).type
+
+      if(logLevel && !(Object.values(LOG_LEVEL).includes(logLevel))){
+        throw new Error(`Invalid log level: ${logLevel}`)
+      }
+      if(logType && !(logType.split(",").every(type => Object.values(LOG_TYPE).includes(type as LOG_TYPE)))){
+        throw new Error(`Invalid log type: ${logType}`)
+      }
+
       //initiate database
       const orm = await MikroORM.init<PostgreSqlDriver>(mikroOrmConfig)
 

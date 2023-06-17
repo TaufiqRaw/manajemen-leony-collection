@@ -1,9 +1,4 @@
-import dotenv from "dotenv/config"
-import { NextFunction, Request, RequestHandler, Response } from "express"
-
-export function isDevelopment(){
-  return process.env.NODE_ENV === "development"
-}
+import { NextFunction, Request, RequestHandler, Response } from "express";
 
 export function routeHandlerWrapper(requestHandler : RequestHandler){
   return (req : Request, res : Response,next : NextFunction)=>{
@@ -17,11 +12,5 @@ export function routeHandlerWrapper(requestHandler : RequestHandler){
     }else{
       res.send(result)
     }
-  }
-}
-
-export function devLog(...message : any[]){
-  if(isDevelopment()){
-    console.log(...message)
   }
 }

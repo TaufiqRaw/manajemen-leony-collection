@@ -4,8 +4,10 @@ import { Container, decorate, injectable } from 'inversify';
 import 'reflect-metadata';
 import { ControllerDecoratorMetadata } from './decorators/controller.decorator';
 import { Class } from './types/class.type';
-import { devLog, routeHandlerWrapper } from './utils/helper';
+import { devLog, LOG_LEVEL, LOG_TYPE } from './utils/development.util';
 import httpContext from "express-http-context" 
+import { getMiddleware } from './utils/decorator.util';
+import { routeHandlerWrapper } from './utils/express.util';
 
 const PLACEHOLDER_HANDLER = (req : Request, res : Response, next : NextFunction) => {res.send("bruh")}
 const MIDDLEWARE = "_midleware"
@@ -86,15 +88,12 @@ export abstract class Module {
     })
 
     const paths = router.stack.map(layer => layer.route)
-    devLog("Controllers", paths)
+    devLog(LOG_LEVEL.DEBUG, LOG_TYPE.SERVER ,"Controllers", paths)
 
     this.app.use(router)
   }
 
   rebind(container : Container, em : EntityManager){
-
-    if(!(httpContext.get("routesHandler")))
-      httpContext.set("routesHandler", new Map<string, RequestHandler[]>())
 
     //inject entities
     this._entities.forEach(repository => {
@@ -115,16 +114,15 @@ export abstract class Module {
       const routes = Reflect.ownKeys(Object.getPrototypeOf(instance)).filter(function(property) {
           return typeof instance[property] == 'function' && property !== 'constructor';
       });
-      devLog("routes =",routes)
 
       //re-bind router-wide middleware
-      const routerMiddleware = Reflect.getMetadata("middleware", instance) as RequestHandler[]
+      const routerMiddleware = getMiddleware(instance) as RequestHandler[]
       routerMiddleware && httpContext.get("routesHandler").set("routerMiddleware", routerMiddleware)
 
       //re-bind route
       routes.forEach(route => {
         const metadata = Reflect.getMetadata("controller", instance, route) as ControllerDecoratorMetadata
-        const rawMiddleware = Reflect.getMetadata("middleware", instance, route) as RequestHandler[] | undefined
+        const rawMiddleware = getMiddleware(instance, String(route)) as RequestHandler[] | undefined
         const middleware = rawMiddleware ? rawMiddleware : [] ;
 
         //re-bind specific-route middleware
@@ -132,7 +130,6 @@ export abstract class Module {
 
         //check if method has metadata
         if(metadata){
-
           //re-bind route handler
           httpContext.get("routesHandler")?.set(String(route) , [routeHandlerWrapper(instance[route].bind(instance))])
         }else{

@@ -12,7 +12,7 @@ const port = process.env.PORT || 5000;
 
 new Server({
   port,
-  modules : [UserModule, Authentication],
+  modules : [Authentication, UserModule],
   plugins: [
     cookieParser(),
     cors({
