@@ -1,11 +1,14 @@
 import 'reflect-metadata';
-import { Controller, Get } from "@app/decorators/controller.decorator";
+import { Controller, Get, Middleware } from "@app/decorators/controller.decorator";
 import { UserService } from './user.service';
 import { Request, Response } from "express";
 import { injectable } from 'inversify';
 
 @injectable()
 @Controller('user')
+@Middleware((req, res, next) => {
+  next()
+})
 export class UserController {
 
   constructor(
@@ -14,6 +17,6 @@ export class UserController {
   
   @Get("hello")
   async hello(req : Request, res: Response){
-    return this.userService.getHello();
+    return await this.userService.getUser(1);
   }
 }

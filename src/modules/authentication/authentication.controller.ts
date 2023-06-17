@@ -4,13 +4,15 @@ import { Request, Response } from "express";
 import { AuthenticationService } from './authentication.service';
 import { injectable } from 'inversify';
 import { isLogin } from './middlewares/is-login.middleware';
+import { UserService } from '../user/user.service';
 
 @injectable()
 @Controller('auth')
 export class AuthenticationController {
 
   constructor(
-    private readonly authenticationService: AuthenticationService
+    private readonly authenticationService: AuthenticationService,
+    private readonly userService : UserService,
   ) {}
   
   @Get("check")

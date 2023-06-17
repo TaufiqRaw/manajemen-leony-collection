@@ -1,11 +1,15 @@
 import "reflect-metadata";
 import { injectable } from "inversify";
+import { EntityRepository } from "@mikro-orm/postgresql";
+import { User } from "./user.entity";
 
 @injectable()
 export class UserService {
-  constructor() {}
+  constructor(
+    private readonly userRepository: EntityRepository<User>
+  ) {}
 
-  getHello() {
-    return "hello";
+  async getUser(id : number) {
+    return await this.userRepository.findOne({id});
   }
 }

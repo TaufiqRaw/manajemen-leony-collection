@@ -24,6 +24,9 @@
           "@app/*": [
               "./src/app/*"
           ],
+          "@database/*": [
+              "./src/database/*"
+          ],
       },
   },
   "scripts": {

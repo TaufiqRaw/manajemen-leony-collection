@@ -1,5 +1,6 @@
 import { RequestHandler } from "express";
 import "reflect-metadata";
+import { devLog } from "../utils/helper";
 
 const METHOD ={
   GET : "get",
@@ -19,11 +20,12 @@ export function Controller(path : string | undefined) {
   };
 }
 
-export function Middleware(...middleware: RequestHandler[]) {
+export function Middleware(middleware: RequestHandler[] | RequestHandler) {
+  const arrayMiddleware = Array.isArray(middleware) ? middleware : [middleware]
   return function (target: any, propertyKey?: string) {
     propertyKey ? 
-      Reflect.defineMetadata("middleware", middleware, target, propertyKey) 
-      : Reflect.defineMetadata("middleware", middleware, target.prototype);
+      Reflect.defineMetadata("middleware", arrayMiddleware, target, propertyKey) 
+      : Reflect.defineMetadata("middleware", arrayMiddleware, target.prototype);
   };
 }
 

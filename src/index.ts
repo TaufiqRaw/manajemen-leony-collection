@@ -5,12 +5,14 @@ import cors from "cors"
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import { Authentication } from "@modules/authentication/authentication.module";
+import { UserModule } from "./modules/user/user.module";
+import httpContext from "express-http-context";
 
 const port = process.env.PORT || 5000;
 
 new Server({
   port,
-  modules : [Authentication],
+  modules : [UserModule, Authentication],
   plugins: [
     cookieParser(),
     cors({
@@ -23,5 +25,6 @@ new Server({
       crossOriginResourcePolicy: false,
     }),
     Express.urlencoded({extended: true}),
+    httpContext.middleware,
   ]
 }).run();

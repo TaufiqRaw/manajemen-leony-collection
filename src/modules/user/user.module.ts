@@ -1,12 +1,14 @@
 import { Module } from "@app/module";
 import { UserController } from "./user.controller";
+import { User } from "./user.entity";
 import { UserService } from "./user.service";
 
-export class User extends Module{
+export class UserModule extends Module{
   config(){
     return {
       controllers: [UserController],
-      services: [UserService]
+      services: [UserService],
+      entities: [User]
     }
   }
 }
