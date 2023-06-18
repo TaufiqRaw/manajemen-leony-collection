@@ -8,7 +8,7 @@ import { devLog, LOG_LEVEL, LOG_TYPE } from './utils/development.util';
 import httpContext from "express-http-context" 
 import { getMiddleware } from './utils/decorator.util';
 import { routeHandlerWrapper } from './utils/express.util';
-
+import { RouteHandlerMap } from './bases/route-handler-map.base';
 const PLACEHOLDER_HANDLER = (req : Request, res : Response, next : NextFunction) => {res.send("bruh")}
 const MIDDLEWARE = "_midleware"
 
@@ -24,18 +24,18 @@ export abstract class Module {
   private _entities : Class[]
   private app : Application
 
-  constructor(app : Application){
+  constructor(app : Application, routeHandlerMap : RouteHandlerMap){
     const config = this.config()
     this._services = config.services || []
     this._controllers = config.controllers || []
     this._entities = config.entities || []
     this.app = app
-    this.init()
+    this.init(routeHandlerMap)
   }
 
   abstract config() : ModuleConfig
 
-  init(){
+  init(routeHandlerMap : RouteHandlerMap){
     const router = express.Router()
 
     this._controllers.forEach(controller => {
@@ -75,7 +75,8 @@ export abstract class Module {
             })
           })
 
-          //create route binder
+          //create route and its binder
+          routeHandlerMap.set([metadata.method, path], [controller,controller.prototype[route]] )
           router[metadata.method](path, (req, res, next) => {
             httpContext.get("routesHandler")?.get(route)![0](req, res, next)
           })

@@ -15,6 +15,7 @@ export enum LOG_TYPE {
   SERVER = "server",
   MEMORY = "memory",
   ALL = "all",
+  EXPRESS = "express",
 }
 
 export function isDevelopment(){

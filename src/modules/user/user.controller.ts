@@ -5,11 +5,10 @@ import { Request, Response } from "express";
 import { injectable } from 'inversify';
 import { Class } from '@/app/types/class.type';
 import { AuthenticationService } from '../authentication/authentication.service';
+import { dependentMiddleware} from '@/app/bases/middleware.base';
+import { ExecutionContext } from '@/app/utils/express.util';
+import { getExecutionContext } from '../common/utils/get-execution-context.util';
 
-function testMiddleware(req : Request, res : Response, next : Function){
-  console.log("test middleware")
-  next()
-}
 
 @injectable()
 @Controller('user')
@@ -22,11 +21,10 @@ export class UserController {
     private readonly userService: UserService
   ) {}
   
-  @Middleware({dependencies : [UserService, AuthenticationService], run:(userService : UserService, authenticationService : AuthenticationService)=>
-    async (req,res,next)=>{
-      console.log(await userService.getUser(1), authenticationService.login())
-      next()
-  }}, testMiddleware)
+  @Middleware(async (req, res, next) => {
+            console.log(getExecutionContext().getClassDecoratorKeys())
+            return next();
+          })
   @Get("hello")
   async hello(req : Request, res: Response){
     return await this.userService.getUser(1);

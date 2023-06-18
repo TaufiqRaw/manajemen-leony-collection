@@ -6,10 +6,14 @@ import { Container } from "inversify"
 import process from "process"
 import { errorHandler } from "./error-handler"
 import { Module } from "./module"
-import { ClassOf } from "./types/class.type"
+import { Class, ClassOf } from "./types/class.type"
 import { devLog, isDevelopment, LOG_LEVEL, LOG_TYPE } from "./utils/development.util"
 import httpContext from "express-http-context"
 import minimist from "minimist"
+import { HTTP_METHOD } from "./constants/http-method.constant"
+import { RouteHandlerMap } from "./bases/route-handler-map.base"
+import { ExpressError } from "./errors/express.error"
+import { ExecutionContext } from "./utils/express.util"
 
 interface ServerConfig {
   port: number|string
@@ -25,6 +29,7 @@ export class Server {
   private _plugins : any[]
 
   private moduleInstances : Module[] = []
+  private routeHandlerMap : RouteHandlerMap = new RouteHandlerMap()
 
   constructor({port, plugins, modules}:ServerConfig) {
     this.port = port
@@ -33,9 +38,10 @@ export class Server {
     this._modules = modules || []
   }
 
-  public onRequest(orm : MikroORM) {
+  private onRequest(orm : MikroORM, executionContext : ExecutionContext | undefined) {
     httpContext.set("container", new Container({defaultScope: "Request"}))
-    httpContext.set("routesHandler", new Map<string, RequestHandler[]>())
+    httpContext.set("routesHandler", new Map<string, RequestHandler[]>());
+    httpContext.set("executionContext", executionContext)
 
     //checking for memory leaks
     devLog(LOG_LEVEL.DEBUG, LOG_TYPE.MEMORY,process.memoryUsage())
@@ -70,9 +76,14 @@ export class Server {
       console.log("Initiating Plugins...")
       this._plugins.forEach(plugin => this.application.use(plugin))
 
-      //on request
+      //create on request hook, and inject execution context
       this.application.use((req, res, next) => {
-        this.onRequest(orm)
+        const path = (req.baseUrl + req.path).split("/").reduce((acc, curr) => acc + (curr !== "" ? "/" + curr : ""), "")
+        const executionContext = this.routeHandlerMap.get([(req.method) as HTTP_METHOD, path])
+
+        devLog(LOG_LEVEL.DEBUG, LOG_TYPE.SERVER, "Execution Context =", executionContext)
+
+        this.onRequest(orm, executionContext ? new ExecutionContext(executionContext[1], executionContext[0]): undefined)
         next()
       })
 
@@ -80,8 +91,9 @@ export class Server {
       console.log("Initiating Modules...")
       this._modules.forEach((module, i) => {
         console.log(`(${i + 1}/${this._modules.length}) Instantiate Modules [${module.name}]`)
-        this.moduleInstances.push(new module(this.application))
+        this.moduleInstances.push(new module(this.application, this.routeHandlerMap))
       })
+      devLog(LOG_LEVEL.DEBUG, LOG_TYPE.SERVER, "Route Handler Map =",this.routeHandlerMap)
 
       //start server
       this.application.listen(this.port, () => {

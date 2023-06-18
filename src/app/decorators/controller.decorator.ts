@@ -1,24 +1,14 @@
 import { NextFunction, Request, RequestHandler, Response } from "express";
 import "reflect-metadata";
-import { Middleware as MiddlewareType } from "../bases/middleware.base";
+import { DependentMiddleware, dependentMiddleware } from "../bases/middleware.base";
 import { devLog } from "../utils/development.util";
 import httpContext from "express-http-context"
 import { Container } from "inversify";
 import { Class, ClassOf } from "../types/class.type";
-
-const METHOD ={
-  GET : "get",
-  POST : "post",
-  PUT : "put",
-  DELETE : "delete"
-}
-export type MiddlewareObject = {
-  run : (...args : any[])=>(req:Request,res:Response,next:NextFunction)=> void | Promise<void>
-  dependencies : ClassOf<any>[]
-}
+import { HTTP_METHOD } from "../constants/http-method.constant";
 
 export type ControllerDecoratorMetadata = {
-  method: "get" | "post" | "put" | "delete",
+  method: HTTP_METHOD,
   path: string
 }
 
@@ -28,7 +18,7 @@ export function Controller(path : string | undefined) {
   };
 }
 
-export function Middleware(...middleware: (RequestHandler | MiddlewareObject)[]) {
+export function Middleware(...middleware: (RequestHandler | DependentMiddleware)[]) {
   const arrayMiddleware = Array.isArray(middleware) ? middleware : [middleware]
   return function (target: any, propertyKey?: string) {
     propertyKey ? 
@@ -39,25 +29,25 @@ export function Middleware(...middleware: (RequestHandler | MiddlewareObject)[])
 
 export function Get(metadata ?: string) {
   return function (target: any, propertyKey: string) {
-    Reflect.defineMetadata("controller", {method : METHOD.GET, path : metadata || ""}, target, propertyKey);
+    Reflect.defineMetadata("controller", {method : HTTP_METHOD.GET, path : metadata || ""}, target, propertyKey);
   };
 }
 
 export function Post(metadata ?: string) {
   return function (target: any, propertyKey: string) {
-    Reflect.defineMetadata("controller", {method : METHOD.POST, path : metadata || ""}, target, propertyKey);
+    Reflect.defineMetadata("controller", {method : HTTP_METHOD.POST, path : metadata || ""}, target, propertyKey);
   };
 }
 
 export function Put(metadata ?: string) {
   return function (target: any, propertyKey: string) {
-    Reflect.defineMetadata("controller", {method : METHOD.PUT, path : metadata || ""}, target, propertyKey);
+    Reflect.defineMetadata("controller", {method : HTTP_METHOD.PUT, path : metadata || ""}, target, propertyKey);
   };
 }
 
 export function Delete(metadata ?: string) {
   return function (target: any, propertyKey: string) {
-    Reflect.defineMetadata("controller", {method : METHOD.DELETE, path : metadata || ""}, target, propertyKey);
+    Reflect.defineMetadata("controller", {method : HTTP_METHOD.DELETE, path : metadata || ""}, target, propertyKey);
   };
 }
 
