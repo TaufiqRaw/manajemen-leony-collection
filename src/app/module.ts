@@ -5,11 +5,11 @@ import 'reflect-metadata';
 import { ControllerDecoratorMetadata } from './decorators/controller.decorator';
 import { Class } from './types/class.type';
 import { devLog, LOG_LEVEL, LOG_TYPE } from './utils/development.util';
-import httpContext from "express-http-context" 
 import { getMiddleware } from './utils/decorator.util';
 import { routeHandlerWrapper } from './utils/express.util';
 import { RouteHandlerMap } from './bases/route-handler-map.base';
-const PLACEHOLDER_HANDLER = (req : Request, res : Response, next : NextFunction) => {res.send("bruh")}
+import { RouteBinder } from './types/route-binder.type';
+
 const MIDDLEWARE = "_midleware"
 
 interface ModuleConfig {
@@ -23,6 +23,7 @@ export abstract class Module {
   private _controllers : Class[]
   private _entities : Class[]
   private app : Application
+  private routeBinder : RouteBinder = new Map<string, RequestHandler[]>()
 
   constructor(app : Application, routeHandlerMap : RouteHandlerMap){
     const config = this.config()
@@ -50,7 +51,7 @@ export abstract class Module {
       if(routerMiddleware){
         routerMiddleware.forEach((handler, i)=>{
           router.use((req, res, next) => {
-            httpContext.get("routesHandler")?.get("routerMiddleware")![i](req, res, next)
+            this.routeBinder.get("routerMiddleware")![i](req, res, next)
           })
         })
       }
@@ -71,14 +72,14 @@ export abstract class Module {
           //create binder for specific-route middleware
           middleware.forEach((handler, i)=>{
             router.use(path, (req, res, next) => {
-              httpContext.get("routesHandler")?.get(route+MIDDLEWARE)![i](req, res, next)
+              this.routeBinder.get(route+MIDDLEWARE)![i](req, res, next)
             })
           })
 
           //create route and its binder
           routeHandlerMap.set([metadata.method, path], [controller,controller.prototype[route]] )
           router[metadata.method](path, (req, res, next) => {
-            httpContext.get("routesHandler")?.get(route)![0](req, res, next)
+            this.routeBinder.get(route)![0](req, res, next)
           })
 
         }else{
@@ -117,22 +118,22 @@ export abstract class Module {
       });
 
       //re-bind router-wide middleware
-      const routerMiddleware = getMiddleware(instance) as RequestHandler[]
-      routerMiddleware && httpContext.get("routesHandler").set("routerMiddleware", routerMiddleware)
+      const routerMiddleware = getMiddleware(instance, undefined, container) as RequestHandler[]
+      routerMiddleware && this.routeBinder.set("routerMiddleware", routerMiddleware)
 
       //re-bind route
       routes.forEach(route => {
         const metadata = Reflect.getMetadata("controller", instance, route) as ControllerDecoratorMetadata
-        const rawMiddleware = getMiddleware(instance, String(route)) as RequestHandler[] | undefined
+        const rawMiddleware = getMiddleware(instance, String(route), container) as RequestHandler[] | undefined
         const middleware = rawMiddleware ? rawMiddleware : [] ;
 
         //re-bind specific-route middleware
-        httpContext.get("routesHandler")?.set(String(route)+MIDDLEWARE , middleware)
+        this.routeBinder.set(String(route)+MIDDLEWARE , middleware)
 
         //check if method has metadata
         if(metadata){
           //re-bind route handler
-          httpContext.get("routesHandler")?.set(String(route) , [routeHandlerWrapper(instance[route].bind(instance))])
+          this.routeBinder.set(String(route) , [routeHandlerWrapper(instance[route].bind(instance), container)])
         }else{
           //if no metadata is found for a route handler, throw error
           throw new Error(`Controller ${controller.name} has no metadata for method ${String(route)}`)

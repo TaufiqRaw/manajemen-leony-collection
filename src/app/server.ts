@@ -7,13 +7,15 @@ import process from "process"
 import { errorHandler } from "./error-handler"
 import { Module } from "./module"
 import { Class, ClassOf } from "./types/class.type"
-import { devLog, isDevelopment, LOG_LEVEL, LOG_TYPE } from "./utils/development.util"
+import { devLog, isDevelopment, isDevelopmentFor, LOG_LEVEL, LOG_TYPE } from "./utils/development.util"
 import httpContext from "express-http-context"
 import minimist from "minimist"
 import { HTTP_METHOD } from "./constants/http-method.constant"
 import { RouteHandlerMap } from "./bases/route-handler-map.base"
 import { ExpressError } from "./errors/express.error"
 import { ExecutionContext } from "./utils/express.util"
+import { RouteBinder } from "./types/route-binder.type"
+import fs from "fs"
 
 interface ServerConfig {
   port: number|string
@@ -31,6 +33,10 @@ export class Server {
   private moduleInstances : Module[] = []
   private routeHandlerMap : RouteHandlerMap = new RouteHandlerMap()
 
+  private errorBinder : Function = ()=>{}
+
+  private memoryTrack:number[] = []
+
   constructor({port, plugins, modules}:ServerConfig) {
     this.port = port
     this.application = Express()
@@ -39,19 +45,33 @@ export class Server {
   }
 
   private onRequest(orm : MikroORM, executionContext : ExecutionContext | undefined) {
-    httpContext.set("container", new Container({defaultScope: "Request"}))
-    httpContext.set("routesHandler", new Map<string, RequestHandler[]>());
+    const reqContainer = new Container({defaultScope: "Request"})
     httpContext.set("executionContext", executionContext)
+    httpContext.set("iocStatus", true)
 
     //checking for memory leaks
-    devLog(LOG_LEVEL.DEBUG, LOG_TYPE.MEMORY,process.memoryUsage())
+    if(isDevelopmentFor(LOG_TYPE.MEMORY)){
+      const memoryUsage = process.memoryUsage()
+      let key : keyof NodeJS.MemoryUsage
+      for (const key in memoryUsage) {
+        //@ts-ignore
+        memoryUsage[key] = Math.round((memoryUsage[key] as number) / 1024 / 1024 * 100) / 100 + " MB"
+      }
+      devLog(LOG_LEVEL.DEBUG, LOG_TYPE.MEMORY, memoryUsage)
+
+      this.memoryTrack.push(process.memoryUsage().heapUsed)
+    }
+
     devLog(LOG_LEVEL.DEBUG, LOG_TYPE.SERVER ,"Route Length =",this.application._router.stack.length)
     
     //rebind modules
     devLog(LOG_LEVEL.INFO, LOG_TYPE.SERVER, "Rebinding Modules...")
     this.moduleInstances.forEach(module => {
-      module.rebind(httpContext.get("container"), orm.em.fork())
+      module.rebind(reqContainer, orm.em.fork())
     })
+
+    //rebind error handler
+    this.errorBinder = (err:any, req:any, res:any, next:any)=>{errorHandler.getMiddleware(reqContainer)(err, req, res, next); reqContainer.unbindAll()}
     
     devLog(LOG_LEVEL.INFO, LOG_TYPE.SERVER,"Done rebinding")
   }
@@ -101,7 +121,17 @@ export class Server {
       })
 
       //error handler
-      this.application.use(errorHandler)
+      this.application.use((err:any, req:any ,res:any ,next:any)=>{
+        if(!httpContext.get("iocStatus"))
+          return next(err)
+        this.errorBinder(err, req,res,next)
+      })
+
+      isDevelopmentFor(LOG_TYPE.MEMORY) && process.on("SIGINT", async () => {
+        fs.writeFileSync("./memory-track.log", this.memoryTrack.reduce((acc, curr) => acc + curr + "\n", ""))
+        process.exit()
+      })
+
     } catch (err) {
       console.error(err)
       process.exit(1)

@@ -1,10 +1,6 @@
-import { NextFunction, Request, RequestHandler, Response } from "express";
 import "reflect-metadata";
+import { NextFunction, Request, RequestHandler, Response } from "express";
 import { DependentMiddleware, dependentMiddleware } from "../bases/middleware.base";
-import { devLog } from "../utils/development.util";
-import httpContext from "express-http-context"
-import { Container } from "inversify";
-import { Class, ClassOf } from "../types/class.type";
 import { HTTP_METHOD } from "../constants/http-method.constant";
 
 export type ControllerDecoratorMetadata = {

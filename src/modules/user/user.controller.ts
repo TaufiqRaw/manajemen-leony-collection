@@ -22,11 +22,10 @@ export class UserController {
   ) {}
   
   @Middleware(async (req, res, next) => {
-            console.log(getExecutionContext().getClassDecoratorKeys())
             return next();
           })
-  @Get("hello")
-  async hello(req : Request, res: Response){
+  @Get("test")
+  async test(req : Request, res: Response){
     return await this.userService.getUser(1);
   }
 }

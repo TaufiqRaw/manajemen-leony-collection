@@ -22,6 +22,10 @@ export function isDevelopment(){
   return process.env.NODE_ENV === "development"
 }
 
+export function isDevelopmentFor(type : LOG_TYPE){
+  return isDevelopment() && minimist(process.argv.slice(2)).type?.split(",").includes(type)
+}
+
 export function devLog(level : LOG_LEVEL = LOG_LEVEL.DEBUG ,type : [LOG_TYPE] | LOG_TYPE = LOG_TYPE.ALL, ...message : any[]){
   if(!isDevelopment()) return;
 
