@@ -3,25 +3,31 @@ import express, { Application, NextFunction, Request, RequestHandler, Response }
 import { Container, decorate, injectable } from 'inversify';
 import 'reflect-metadata';
 import { ControllerDecoratorMetadata } from './decorators/controller.decorator';
-import { Class } from './types/class.type';
+import { Class, ClassOf } from './types/class.type';
 import { devLog, LOG_LEVEL, LOG_TYPE } from './utils/development.util';
 import { getMiddleware } from './utils/decorator.util';
 import { routeHandlerWrapper } from './utils/express.util';
 import { RouteHandlerMap } from './bases/route-handler-map.base';
 import { RouteBinder } from './types/route-binder.type';
+import httpContext from 'express-http-context';
+import _ from 'lodash'
 
 const MIDDLEWARE = "_midleware"
 
 interface ModuleConfig {
-  services?: Class[]
+  imports?: Class[]
+  services?: (Class | {token : Class, bindTo : Class})[]
   controllers?: Class[]
   entities?: Class[]
+  exports ?: Class[]
 }
 
 export abstract class Module {
-  private _services : Class[]
+  private _imports : ClassOf<Module>[]
+  private _services : (Class | {token : Class, bindTo : Class})[]
   private _controllers : Class[]
   private _entities : Class[]
+  public readonly _exports : Class[]
   private app : Application
   private routeBinder : RouteBinder = new Map<string, RequestHandler[]>()
 
@@ -30,6 +36,8 @@ export abstract class Module {
     this._services = config.services || []
     this._controllers = config.controllers || []
     this._entities = config.entities || []
+    this._imports = config.imports || []
+    this._exports = config.exports || []
     this.app = app
     this.init(routeHandlerMap)
   }
@@ -95,7 +103,7 @@ export abstract class Module {
     this.app.use(router)
   }
 
-  rebind(container : Container, em : EntityManager){
+  rebind(globalContainer : Container ,container : Container, em : EntityManager){
 
     //inject entities
     this._entities.forEach(repository => {
@@ -103,12 +111,30 @@ export abstract class Module {
       container.bind(EntityRepository<typeof repository>).toConstantValue(repo);
     })
 
+    //inject imports
+    this._imports.forEach(imported => {
+      const moduleInstance = globalContainer.get(imported)
+      moduleInstance.config().exports.forEach((exported : Class) => {
+        const instance = globalContainer.get(exported)
+        container.bind(exported).toConstantValue(instance)
+      })
+    })
+
     //inject services
     this._services.forEach(service => {
+      if(_.has(service, "token") && _.has(service, "bindTo")) //@ts-ignore
+        container.bind(service.token).to(service.bindTo) 
+      
+      //@ts-ignore
       container.bind(service).toSelf()
     })
 
+    this._exports.forEach(exported => {
+      const instance = container.get(exported)
+      globalContainer.bind(exported).toConstantValue(instance)})
+
     //inject controllers and map routes
+
     this._controllers.forEach(controller => {
       container.bind(controller).toSelf()
       const instance = container.get(controller)

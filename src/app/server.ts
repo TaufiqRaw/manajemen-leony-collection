@@ -45,9 +45,9 @@ export class Server {
   }
 
   private onRequest(orm : MikroORM, executionContext : ExecutionContext | undefined) {
+    console.clear();
     const reqContainer = new Container({defaultScope: "Request"})
     httpContext.set("executionContext", executionContext)
-    httpContext.set("iocStatus", true)
 
     //checking for memory leaks
     if(isDevelopmentFor(LOG_TYPE.MEMORY)){
@@ -66,12 +66,20 @@ export class Server {
     
     //rebind modules
     devLog(LOG_LEVEL.INFO, LOG_TYPE.SERVER, "Rebinding Modules...")
-    this.moduleInstances.forEach(module => {
-      module.rebind(reqContainer, orm.em.fork())
+    this.moduleInstances.forEach((module,i) => {
+      const moduleContainer = new Container({defaultScope: "Request"})
+      module.rebind(reqContainer,moduleContainer, orm.em.fork())
+      moduleContainer.unbindAll();
+      reqContainer.bind(this._modules[i]).toConstantValue(module)
     })
 
     //rebind error handler
-    this.errorBinder = (err:any, req:any, res:any, next:any)=>{errorHandler.getMiddleware(reqContainer)(err, req, res, next); reqContainer.unbindAll()}
+    this.errorBinder = (err:any, req:any, res:any, next:any)=>{errorHandler.getMiddleware(reqContainer)(err, req, res, next)}
+
+    //done injecting, unbind all from request container
+    reqContainer.unbindAll()
+
+    httpContext.set("iocStatus", true)
     
     devLog(LOG_LEVEL.INFO, LOG_TYPE.SERVER,"Done rebinding")
   }
@@ -127,6 +135,7 @@ export class Server {
         this.errorBinder(err, req,res,next)
       })
 
+      //log memory usage if development flag is set for memory 
       isDevelopmentFor(LOG_TYPE.MEMORY) && process.on("SIGINT", async () => {
         fs.writeFileSync("./memory-track.log", this.memoryTrack.reduce((acc, curr) => acc + curr + "\n", ""))
         process.exit()

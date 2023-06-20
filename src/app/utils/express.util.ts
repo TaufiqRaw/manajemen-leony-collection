@@ -9,14 +9,10 @@ export function routeHandlerWrapper(requestHandler : RequestHandler, container: 
     //if result is a promise, wait for it to resolve before sending response
     if(result instanceof Promise){
       result.then((result : any)=>{
-        //unbind container after request is done
-        container.unbindAll()
         res.send(result)
       })
       result.catch(next)
     }else{
-      //unbind container after request is done
-      container.unbindAll()
       res.send(result)
     }
   }

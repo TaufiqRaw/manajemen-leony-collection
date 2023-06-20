@@ -18,7 +18,8 @@ import { getExecutionContext } from '../common/utils/get-execution-context.util'
 export class UserController {
 
   constructor(
-    private readonly userService: UserService
+    private readonly userService: UserService,
+    private readonly authenticationService: AuthenticationService,
   ) {}
   
   @Middleware(async (req, res, next) => {
