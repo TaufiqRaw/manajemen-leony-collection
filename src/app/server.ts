@@ -30,7 +30,7 @@ export class Server {
   private _modules: ClassOf<Module>[]
   private _plugins : any[]
 
-  private moduleInstancesMap : ModuleInstanceMap
+  private moduleInstancesMap : ModuleInstanceMap = new ModuleInstanceMap()
   private moduleInstances : Module[] = []
   private routeHandlerMap : RouteHandlerMap = new RouteHandlerMap()
 
@@ -43,7 +43,6 @@ export class Server {
     this.application = Express()
     this._plugins = plugins || []
     this._modules = modules || []
-    this.moduleInstancesMap = new ModuleInstanceMap(this._modules)
   }
 
   private onRequest(orm : MikroORM, executionContext : ExecutionContext | undefined) {
@@ -72,7 +71,7 @@ export class Server {
       const moduleContainer = new Container({defaultScope: "Request"})
       module.rebind(reqContainer,moduleContainer, orm.em.fork())
       moduleContainer.unbindAll();
-      reqContainer.bind(this.moduleInstancesMap.getClassOf(module)!).toConstantValue(module)
+      reqContainer.bind(this._modules.find(key => module instanceof key)!).toConstantValue(module)
     })
 
     //rebind error handler

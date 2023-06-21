@@ -9,14 +9,7 @@ import {Module} from "../module"
 
 export class ModuleInstanceMap {
   private _entries : Module[] = []
-  private _keys : ClassOf<Module>[] = []
-  constructor(keys : ClassOf<Module>[]){
-    this._keys = keys
-  }
-
-  getClassOf(module : Module){
-    return this._keys.find(key => module instanceof key)
-  }
+  constructor(){}
 
   get(module : ClassOf<Module>){
     return this._entries.find(entry => entry instanceof module)
