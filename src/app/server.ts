@@ -72,7 +72,7 @@ export class Server {
       const moduleContainer = new Container({defaultScope: "Request"})
       module.rebind(reqContainer,moduleContainer, orm.em.fork())
       moduleContainer.unbindAll();
-      reqContainer.bind(this._modules[i]).toConstantValue(module)
+      reqContainer.bind(this.moduleInstancesMap.getClassOf(module)!).toConstantValue(module)
     })
 
     //rebind error handler
@@ -174,7 +174,7 @@ function checkCircularDependency(module: Module, visited: Module[] = [], moduleI
 
 function sortModulesByDependency(modules: ClassOf<Module>[], moduleInstanceMap : ModuleInstanceMap): Module[] {
   const instances = modules.map(module => moduleInstanceMap.get(module)!);
-  const sorted: Module[] = [];
+  let sorted: Module[] = [];
   const visited: Module[] = [];
 
   for (const instance of instances) {
@@ -183,20 +183,18 @@ function sortModulesByDependency(modules: ClassOf<Module>[], moduleInstanceMap :
 
   function visitModule(module: Module) {
     if (visited.includes(module)) {
-      return;
-    }
-
-    visited.push(module);
+      sorted = sorted.filter((sortedModule) => sortedModule !== module);
+    } else
+      visited.push(module);
+      
+    sorted.push(module);
 
     for (const importedModule of module._imports) {
       const instance = moduleInstanceMap.get(importedModule)!
       visitModule(instance);
     }
 
-    sorted.push(module);
   }
 
-
-
-  return sorted;
+  return sorted.reverse();
 }
