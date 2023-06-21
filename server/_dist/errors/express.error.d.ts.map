@@ -1,0 +1,1 @@
+{"version":3,"file":"express.error.d.ts","sourceRoot":"","sources":["../../errors/express.error.ts"],"names":[],"mappings":"AAAA,qBAAa,YAAa,SAAQ,KAAK;IACrC,UAAU,EAAG,MAAM,CAAC;gBACR,OAAO,EAAE,MAAM,EAAE,UAAU,EAAG,MAAM;CAIjD"}

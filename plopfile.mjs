@@ -9,15 +9,15 @@ export default function (plop) {
 		}],
 		actions: [{
 			type: 'add',
-			path: 'src/modules/{{kebabCase name}}/{{kebabCase name}}.controller.ts',
+			path: 'app/modules/{{kebabCase name}}/{{kebabCase name}}.controller.ts',
 			templateFile: 'plop-templates/controller.template.hbs'
 		}, {
     type: 'add',
-    path: 'src/modules/{{kebabCase name}}/{{kebabCase name}}.module.ts',
+    path: 'app/modules/{{kebabCase name}}/{{kebabCase name}}.module.ts',
     templateFile: 'plop-templates/module.template.hbs'
   },{
     type: 'add',
-    path: 'src/modules/{{kebabCase name}}/{{kebabCase name}}.service.ts',
+    path: 'app/modules/{{kebabCase name}}/{{kebabCase name}}.service.ts',
     templateFile: 'plop-templates/service.template.hbs'
   },]
 	});

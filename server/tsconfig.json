@@ -1,0 +1,26 @@
+{
+  "compileOnSave": true,
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "target": "es2016",
+    "module": "commonjs",
+    "declaration": true,
+    "declarationMap": true,
+    "outDir": "./_dist",
+    // "outDir": "./",               
+    "rootDir": ".",
+    "baseUrl": ".",
+    "composite": true,
+    "strict": true,
+    "moduleResolution": "node",
+    "paths": {
+      "@server/*" : [
+          "./*"
+      ],
+    }
+  },
+}

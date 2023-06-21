@@ -4,8 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "cross-env NODE_ENV=development nodemon --ignore '*.log' --exec ts-node src/index.ts",
-    "gen": "plop"
+    "dev": "cross-env NODE_ENV=development nodemon --ignore '*.log' --exec ts-node app/index.ts",
+    "gen": "plop",
+    "build" : "tsc -b app server"
   },
   "keywords": [],
   "author": "",
@@ -31,16 +32,14 @@
     "ts-morph": "^19.0.0"
   },
   "_moduleAliases": {
-    "@": "./src",
-    "@modules": "./src/modules",
-    "@app": "./src/app",
-    "@database": "./src/database"
+    "@server" : "./server",
+    "@app": "./app"
   },
   "mikro-orm": {
     "useTsNode": true,
     "configPaths": [
-      "./src/database/mikro-orm.config.ts",
-      "./dist/database/mikro-orm.config.js"
+      "./app/mikro-orm.config.ts",
+      "./app/_dist/mikro-orm.config.js"
     ]
   },
   "devDependencies": {
