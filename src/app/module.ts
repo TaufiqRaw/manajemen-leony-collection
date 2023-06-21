@@ -7,7 +7,7 @@ import { Class, ClassOf } from './types/class.type';
 import { devLog, LOG_LEVEL, LOG_TYPE } from './utils/development.util';
 import { getMiddleware } from './utils/decorator.util';
 import { routeHandlerWrapper } from './utils/express.util';
-import { RouteHandlerMap } from './bases/route-handler-map.base';
+import { RouteHandlerMap } from './utils/route-handler-map.base';
 import { RouteBinder } from './types/route-binder.type';
 import httpContext from 'express-http-context';
 import _ from 'lodash'
@@ -23,7 +23,7 @@ interface ModuleConfig {
 }
 
 export abstract class Module {
-  private _imports : ClassOf<Module>[]
+  public readonly _imports : ClassOf<Module>[]
   private _services : (Class | {token : Class, bindTo : Class})[]
   private _controllers : Class[]
   private _entities : Class[]

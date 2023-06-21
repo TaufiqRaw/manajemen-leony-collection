@@ -32,7 +32,8 @@ export function devLog(level : LOG_LEVEL = LOG_LEVEL.DEBUG ,type : [LOG_TYPE] | 
   const logLevelPriority = [LOG_LEVEL.ERROR, LOG_LEVEL.WARN, LOG_LEVEL.DEBUG,LOG_LEVEL.INFO]
 
   const logLevel = minimist(process.argv.slice(2)).level || LOG_LEVEL.INFO;
-  const logType = (minimist(process.argv.slice(2)).type as string)?.split(",") || LOG_TYPE.ALL;
+  const rawLogType = (minimist(process.argv.slice(2)).type as string)?.split(",") || LOG_TYPE.ALL;
+  const logType = Array.isArray(rawLogType) ? rawLogType : [rawLogType];
 
   if(logLevelPriority.indexOf(level) > logLevelPriority.indexOf(logLevel)) return;
   //if user logType is not on type and if the user logType not ONLY type.ALL, exit this function

@@ -2,7 +2,7 @@ import { NextFunction, Request, RequestHandler, Response } from "express";
 import { Container } from "inversify";
 import { bindDependencies } from "../utils/inversify.util";
 
-type DependentMiddlewareFunction = (...args : any[])=>(((req : Request, res : Response, next : NextFunction)=>void | Promise<void>) | ((err : any,req : Request, res : Response, next : NextFunction)=>void | Promise<void>));
+type DependentMiddlewareFunction = (...args : any[])=>(((req : Request, res : Response, next : NextFunction)=>any | Promise<any> ) | ((err : any,req : Request, res : Response, next : NextFunction)=>any | Promise<any>));
 
 export function dependentMiddleware(func : DependentMiddlewareFunction, args : any[]){
   return new DependentMiddleware(func, args)

@@ -11,11 +11,11 @@ import { devLog, isDevelopment, isDevelopmentFor, LOG_LEVEL, LOG_TYPE } from "./
 import httpContext from "express-http-context"
 import minimist from "minimist"
 import { HTTP_METHOD } from "./constants/http-method.constant"
-import { RouteHandlerMap } from "./bases/route-handler-map.base"
+import { RouteHandlerMap } from "./utils/route-handler-map.base"
 import { ExpressError } from "./errors/express.error"
 import { ExecutionContext } from "./utils/express.util"
-import { RouteBinder } from "./types/route-binder.type"
 import fs from "fs"
+import { ModuleInstanceMap } from "./utils/module-instance-map.util"
 
 interface ServerConfig {
   port: number|string
@@ -30,6 +30,7 @@ export class Server {
   private _modules: ClassOf<Module>[]
   private _plugins : any[]
 
+  private moduleInstancesMap : ModuleInstanceMap
   private moduleInstances : Module[] = []
   private routeHandlerMap : RouteHandlerMap = new RouteHandlerMap()
 
@@ -42,6 +43,7 @@ export class Server {
     this.application = Express()
     this._plugins = plugins || []
     this._modules = modules || []
+    this.moduleInstancesMap = new ModuleInstanceMap(this._modules)
   }
 
   private onRequest(orm : MikroORM, executionContext : ExecutionContext | undefined) {
@@ -63,7 +65,7 @@ export class Server {
     }
 
     devLog(LOG_LEVEL.DEBUG, LOG_TYPE.SERVER ,"Route Length =",this.application._router.stack.length)
-    
+
     //rebind modules
     devLog(LOG_LEVEL.INFO, LOG_TYPE.SERVER, "Rebinding Modules...")
     this.moduleInstances.forEach((module,i) => {
@@ -103,7 +105,7 @@ export class Server {
       //initiate plugins
       console.log("Initiating Plugins...")
       this._plugins.forEach(plugin => this.application.use(plugin))
-
+      
       //create on request hook, and inject execution context
       this.application.use((req, res, next) => {
         const path = (req.baseUrl + req.path).split("/").reduce((acc, curr) => acc + (curr !== "" ? "/" + curr : ""), "")
@@ -119,10 +121,17 @@ export class Server {
       console.log("Initiating Modules...")
       this._modules.forEach((module, i) => {
         console.log(`(${i + 1}/${this._modules.length}) Instantiate Modules [${module.name}]`)
-        this.moduleInstances.push(new module(this.application, this.routeHandlerMap))
+        this.moduleInstancesMap.add(new module(this.application, this.routeHandlerMap));
       })
       devLog(LOG_LEVEL.DEBUG, LOG_TYPE.SERVER, "Route Handler Map =",this.routeHandlerMap)
 
+      if(this._modules.length === 0)
+        throw new Error("No module found")
+
+      this._modules.forEach(module => 
+        checkCircularDependency(this.moduleInstancesMap.get(module)!, [], this.moduleInstancesMap))
+      this.moduleInstances = sortModulesByDependency(this._modules, this.moduleInstancesMap)
+      
       //start server
       this.application.listen(this.port, () => {
         console.log(`> Server running on http://localhost:${this.port}`)
@@ -146,4 +155,48 @@ export class Server {
       process.exit(1)
     }
   }
+}
+
+function checkCircularDependency(module: Module, visited: Module[] = [], moduleInstanceMap : ModuleInstanceMap) {
+  if (visited.includes(module)) {
+    throw new Error('Circular dependency detected!');
+  }
+
+  visited.push(module);
+
+  for (const importedModule of module._imports) {
+    const instance = moduleInstanceMap.get(importedModule)!
+    checkCircularDependency(instance, visited, moduleInstanceMap);
+  }
+
+  visited.pop();
+}
+
+function sortModulesByDependency(modules: ClassOf<Module>[], moduleInstanceMap : ModuleInstanceMap): Module[] {
+  const instances = modules.map(module => moduleInstanceMap.get(module)!);
+  const sorted: Module[] = [];
+  const visited: Module[] = [];
+
+  for (const instance of instances) {
+    visitModule(instance);
+  }
+
+  function visitModule(module: Module) {
+    if (visited.includes(module)) {
+      return;
+    }
+
+    visited.push(module);
+
+    for (const importedModule of module._imports) {
+      const instance = moduleInstanceMap.get(importedModule)!
+      visitModule(instance);
+    }
+
+    sorted.push(module);
+  }
+
+
+
+  return sorted;
 }

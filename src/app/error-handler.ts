@@ -7,7 +7,7 @@ export const errorHandler = dependentMiddleware(()=>{
   return (err : ExpressError,req,res,next)=>{
     devLog(LOG_LEVEL.ERROR, LOG_TYPE.EXPRESS,err.stack)
     if(!err.statusCode)
-      res.status(500).send("internal server error")
+      return res.status(500).send("internal server error")
     res.status(err.statusCode).send(err.message)
     return;
   }
