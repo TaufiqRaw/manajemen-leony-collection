@@ -6,7 +6,7 @@ import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import { UserModule } from "./modules/user/user.module";
 import httpContext from "express-http-context";
-import config from "./mikro-orm.config";
+import config from "./database/mikro-orm.config";
 import { AuthenticationModule } from "./modules/authentication/authentication.module";
 
 const port = process.env.PORT || 5000;

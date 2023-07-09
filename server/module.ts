@@ -145,7 +145,7 @@ export abstract class Module {
 
       //re-bind router-wide middleware
       const routerMiddleware = getMiddleware(instance, undefined, container) as RequestHandler[]
-      routerMiddleware && this.routeBinder.set("routerMiddleware", routerMiddleware)
+      routerMiddleware && this.routeBinder.set("routerMiddleware", routerMiddleware.map(handler => routeHandlerWrapper(handler)))
 
       //re-bind route
       routes.forEach(route => {
@@ -154,12 +154,12 @@ export abstract class Module {
         const middleware = rawMiddleware ? rawMiddleware : [] ;
 
         //re-bind specific-route middleware
-        this.routeBinder.set(String(route)+MIDDLEWARE , middleware)
+        this.routeBinder.set(String(route)+MIDDLEWARE , middleware.map(handler => routeHandlerWrapper(handler)))
 
         //check if method has metadata
         if(metadata){
           //re-bind route handler
-          this.routeBinder.set(String(route) , [routeHandlerWrapper(instance[route].bind(instance), container)])
+          this.routeBinder.set(String(route) , [routeHandlerWrapper(instance[route].bind(instance))])
         }else{
           //if no metadata is found for a route handler, throw error
           throw new Error(`Controller ${controller.name} has no metadata for method ${String(route)}`)

@@ -1,20 +1,22 @@
 import "reflect-metadata"
-import { NextFunction, Request, RequestHandler, Response } from "express";
+import { Application, NextFunction, Request, RequestHandler, Response } from "express";
 import { Class } from "../types/class.type";
 import { Container } from "inversify";
+import { Renderable } from "../types/renderable.type";
 
-export function routeHandlerWrapper(requestHandler : RequestHandler, container: Container){
+export function routeHandlerWrapper(requestHandler : RequestHandler){
   return (req : Request, res : Response,next : NextFunction)=>{
-    const result = requestHandler(req,res,next) as Promise<any> | any;
-    //if result is a promise, wait for it to resolve before sending response
-    if(result instanceof Promise){
-      result.then((result : any)=>{
-        res.send(result)
-      })
-      result.catch(next)
-    }else{
-      res.send(result)
-    }
+    const result : any = Promise.resolve(requestHandler(req,res,next)).catch((err)=>{
+      return next(err)
+    }).then((result : any | void)=>{
+      if(!result){
+        return;
+      } else if(result instanceof Renderable){
+        return res.render(result.filename, result.data)
+      } else{
+        return res.send(result)
+      }
+    })
   }
 }
 

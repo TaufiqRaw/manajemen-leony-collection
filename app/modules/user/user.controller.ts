@@ -1,9 +1,10 @@
 import 'reflect-metadata';
-import { Controller, Get, Middleware } from "@server/.";
+import { Controller, dependentMiddleware, Get, Middleware, Renderable} from "@server/.";
 import { UserService } from './user.service';
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { injectable } from 'inversify';
 import { AuthenticationService } from '../authentication/authentication.service';
+import { ExpressError } from '@app/../server/errors/express.error';
 
 
 @injectable()
@@ -18,11 +19,15 @@ export class UserController {
     private readonly authenticationService: AuthenticationService,
   ) {}
   
-  @Middleware(async (req, res, next) => {
-            return next();
-          })
+  @Middleware(dependentMiddleware((authenticationService : AuthenticationService)=>
+  async (req : Request, res : Response,next : NextFunction)=>{
+    console.log(authenticationService.login())
+    next()
+  }
+  , [AuthenticationService]))
   @Get("test")
-  async test(req : Request, res: Response){
-    return await this.userService.getUser(1);
+  async test(req : Request, res: Response, next: NextFunction){
+    const user = await this.userService.getUser(1);
+    return new Renderable("test", {data:user?.name});
   }
 }

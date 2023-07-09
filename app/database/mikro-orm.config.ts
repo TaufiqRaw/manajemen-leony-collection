@@ -13,12 +13,12 @@ const config : Options<PostgreSqlDriver> = {
   port : Number(process.env.DB_PORT) || 5432,
   type: 'postgresql',
   migrations: {
-    path: 'dist/database/migrations',
-    pathTs: 'src/database/migrations',
+    path: './app/_dist/database/migrations',
+    pathTs: './app/database/migrations',
   },
   seeder:{
-    path: 'dist/database/seeder',
-    pathTs: 'src/database/seeder'
+    path: './app/_dist/database/seeders',
+    pathTs: './app/database/seeders'
   }
 }
 

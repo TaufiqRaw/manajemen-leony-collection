@@ -14,6 +14,8 @@ import { RouteHandlerMap } from "./utils/route-handler-map.base"
 import { ExecutionContext } from "./utils/express.util"
 import fs from "fs"
 import { ModuleInstanceMap } from "./utils/module-instance-map.util"
+import path from "path"
+require('express-async-errors');
 
 interface ServerConfig {
   port: number|string
@@ -41,6 +43,8 @@ export class Server {
   constructor({port, plugins, modules, databaseConfig}:ServerConfig) {
     this.port = port
     this.application = Express()
+    this.application.set("view engine", "ejs")
+    this.application.set("views", path.join(__dirname, "../views"))
     this._plugins = plugins || []
     this._modules = modules || []
     this.databaseConfig = databaseConfig
